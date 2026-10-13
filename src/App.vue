@@ -231,8 +231,10 @@ function deleteList(id: string) {
         v-for="l in lists"
         :key="l.id"
         :list="l"
+        :all-lists="lists"
         @delete="deleteList(l.id)"
         @move-film="(filmId, fromListId) => moveFilm(filmId, fromListId, l.id)"
+        @move-to="(filmId, toListId) => moveFilm(filmId, l.id, toListId)"
       />
       <button class="add-list" @click="addList">➕<br />Новый список</button>
     </div>
@@ -368,7 +370,8 @@ function deleteList(id: string) {
 
 .lists {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  /* min(…, 100%) — на узком экране одна колонка на всю ширину без горизонтальной прокрутки */
+  grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr));
   gap: 18px;
   align-items: start;
 }
@@ -444,11 +447,53 @@ function deleteList(id: string) {
   box-shadow: 0 0 18px rgba(0, 229, 255, 0.5);
   font-weight: 800;
   white-space: nowrap;
+  max-width: calc(100vw - 32px);
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-@media (max-width: 420px) {
-  .lists {
-    grid-template-columns: 1fr;
+/* ---------- Телефоны ---------- */
+@media (max-width: 600px) {
+  .app {
+    /* сверху место под кнопку звука, чтобы она не наезжала на переключатели списков */
+    padding: 62px 12px 40px;
+  }
+
+  .mute {
+    top: 10px;
+    right: 10px;
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+  }
+
+  .chips {
+    margin-bottom: 16px;
+    gap: 6px;
+  }
+
+  .chip {
+    padding: 5px 10px;
+    font-size: 13px;
+  }
+
+  .tabs {
+    margin: 28px 0 14px;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .tabs button {
+    padding: 9px 14px;
+    font-size: 13px;
+  }
+
+  .add-list {
+    min-height: 90px;
+  }
+
+  .backup {
+    margin-top: 28px;
   }
 }
 </style>

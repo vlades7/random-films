@@ -53,7 +53,7 @@ async function spin() {
 const ROD = 120 // длина рукояти, px
 const pull = ref(0) // 0 — поднят, 1 — опущен до конца
 const leverAnimated = ref(false)
-let drag: { startY: number; startPull: number; moved: number } | null = null
+let drag: { startY: number; startPull: number; moved: number; scale: number } | null = null
 
 const rodStyle = computed(() => ({ transform: `scaleY(${1 - 2 * pull.value})` }))
 const knobStyle = computed(() => ({
@@ -78,14 +78,17 @@ function onPointerDown(e: PointerEvent) {
   if (!canSpin.value) return
   ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
   leverAnimated.value = false
-  drag = { startY: e.clientY, startPull: pull.value, moved: 0 }
+  // на телефоне рычаг уменьшен через transform — пересчитываем ход пальца в «пиксели рычага»
+  const lever = (e.currentTarget as HTMLElement).closest<HTMLElement>('.lever')
+  const scale = lever ? lever.getBoundingClientRect().height / lever.offsetHeight || 1 : 1
+  drag = { startY: e.clientY, startPull: pull.value, moved: 0, scale }
 }
 
 function onPointerMove(e: PointerEvent) {
   if (!drag) return
   const dy = e.clientY - drag.startY
   drag.moved = Math.max(drag.moved, Math.abs(dy))
-  pull.value = Math.min(1, Math.max(0, drag.startPull + dy / (2 * ROD)))
+  pull.value = Math.min(1, Math.max(0, drag.startPull + dy / drag.scale / (2 * ROD)))
 }
 
 function onPointerUp() {
@@ -187,7 +190,8 @@ const bulbs = (n: number) => Array.from({ length: n }, (_, i) => i)
   width: fit-content;
   max-width: 100%;
   margin: 0 auto;
-  padding-right: 62px; /* место под рычаг */
+  /* место под рычаг справа и такое же пустое слева — чтобы по центру стоял сам корпус, а не корпус с рычагом */
+  padding: 0 62px;
 }
 
 .machine {
@@ -530,10 +534,98 @@ const bulbs = (n: number) => Array.from({ length: n }, (_, i) => i)
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
 }
 
-@media (max-width: 760px) {
+/* ---------- Телефоны и узкие окна ----------
+   Полноразмерному автомату с симметричными полями под рычаг нужно ~840px */
+@media (max-width: 860px) {
   .machine-wrap {
-    transform: scale(0.82);
-    transform-origin: top center;
+    padding: 0 40px;
+  }
+
+  .machine {
+    padding: 10px 10px 16px;
+    border-width: 4px;
+    border-radius: 26px 26px 16px 16px;
+  }
+
+  .marquee {
+    margin: -4px -4px 12px;
+    padding: 8px 8px;
+    border-width: 3px;
+    border-radius: 20px 20px 10px 10px;
+  }
+
+  .bulb {
+    width: 8px;
+    height: 8px;
+  }
+
+  .logo-small {
+    font-size: clamp(13px, 3.6vw, 20px);
+    letter-spacing: 2px;
+  }
+
+  .logo-big {
+    font-size: clamp(30px, 9vw, 58px);
+  }
+
+  /* боковые лампочки не помещаются — барабанам нужнее место */
+  .side-bulbs {
+    display: none;
+  }
+
+  .window {
+    padding: 6px;
+    gap: 0;
+    border-radius: 14px;
+  }
+
+  .reels {
+    /* три барабана на всю ширину: 180px — поля под рычаг с двух сторон, рамки и отступы страницы */
+    --reel-w: min(170px, calc((100vw - 180px) / 3));
+    gap: 6px;
+    padding: 6px;
+  }
+
+  .arrow {
+    font-size: 14px;
+  }
+
+  .display {
+    margin-top: 12px;
+    gap: 6px;
+  }
+
+  .led {
+    padding: 8px 10px;
+    font-size: clamp(11px, 3.4vw, 17px);
+    border-width: 2px;
+  }
+
+  .credits {
+    padding: 6px 8px;
+    font-size: 10px;
+    border-width: 2px;
+  }
+
+  .credits b {
+    font-size: 15px;
+  }
+
+  .spin-btn {
+    margin-top: 12px;
+    padding: 12px 34px;
+    font-size: clamp(18px, 5.5vw, 26px);
+  }
+
+  .coin-tray {
+    margin-top: 12px;
+    height: 16px;
+  }
+
+  /* рычаг поменьше; ход пальца пересчитывается в onPointerDown */
+  .lever {
+    right: -6px;
+    transform: translateY(-60%) scale(0.72);
   }
 }
 </style>

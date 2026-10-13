@@ -4,14 +4,24 @@ import Modal from './Modal.vue'
 import FilmCard from './FilmCard.vue'
 import PosterChoices from './PosterChoices.vue'
 import { api } from '../api'
-import type { Film, PosterCandidate } from '../types'
+import type { Film, FilmList, PosterCandidate } from '../types'
 
-const props = defineProps<{ film: Film | null; color: string }>()
-const emit = defineEmits<{ save: [data: { title: string; image?: string; watched: boolean }]; close: [] }>()
+const props = defineProps<{
+  film: Film | null
+  color: string
+  /** список, в котором сейчас фильм, и все списки — для переноса */
+  listId: string
+  lists: FilmList[]
+}>()
+const emit = defineEmits<{
+  save: [data: { title: string; image?: string; watched: boolean; listId: string }]
+  close: []
+}>()
 
 const title = ref(props.film?.title ?? '')
 const image = ref(props.film?.image ?? '')
 const watched = ref(props.film?.watched ?? false)
+const targetListId = ref(props.listId)
 const uploading = ref(false)
 const error = ref('')
 const dragOver = ref(false)
@@ -63,7 +73,7 @@ function save() {
     error.value = 'Введите название'
     return
   }
-  emit('save', { title: t, image: image.value.trim() || undefined, watched: watched.value })
+  emit('save', { title: t, image: image.value.trim() || undefined, watched: watched.value, listId: targetListId.value })
 }
 </script>
 
@@ -93,10 +103,18 @@ function save() {
           Картинка (URL)
           <input v-model="image" placeholder="https://… или загрузите файл" />
         </label>
-        <div class="hint">🖼 Кликни по постеру, перетащи файл или нажми Ctrl+V</div>
+        <div class="hint hint-mouse">🖼 Кликни по постеру, перетащи файл или нажми Ctrl+V</div>
+        <div class="hint hint-touch">🖼 Нажми на постер, чтобы выбрать фото из галереи</div>
         <label class="watched-field">
           <input v-model="watched" type="checkbox" />
           ✓ Просмотрен — не участвует в розыгрыше
+        </label>
+        <!-- перенос в другой список: на телефонах перетаскивание не работает -->
+        <label v-if="film && lists.length > 1">
+          Список
+          <select v-model="targetListId">
+            <option v-for="l in lists" :key="l.id" :value="l.id">{{ l.name }}</option>
+          </select>
         </label>
         <div class="row">
           <button
@@ -208,6 +226,20 @@ label {
   border-top: 2px dashed rgba(255, 210, 63, 0.3);
 }
 
+select {
+  font: inherit;
+  font-size: 15px;
+  color: var(--text);
+  background: rgba(0, 0, 0, 0.35);
+  border: 2px solid rgba(255, 210, 63, 0.35);
+  border-radius: 10px;
+  padding: 7px 10px;
+}
+
+select option {
+  background: #2a0045;
+}
+
 .watched-field {
   flex-direction: row;
   align-items: center;
@@ -228,10 +260,28 @@ label {
   color: var(--muted);
 }
 
+.hint-touch {
+  display: none;
+}
+
+@media (hover: none) {
+  .hint-mouse {
+    display: none;
+  }
+
+  .hint-touch {
+    display: block;
+  }
+}
+
 @media (max-width: 480px) {
   .editor {
     flex-direction: column;
     align-items: center;
+  }
+
+  .fields {
+    align-self: stretch;
   }
 }
 </style>

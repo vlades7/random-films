@@ -1,10 +1,23 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import FilmCard from './FilmCard.vue'
 import type { PoolFilm } from '../types'
 
-const ITEM_H = 240
-const WINDOW_H = 330
+// Ширину барабана задаёт CSS (на телефоне она меньше), высоты считаем от неё
+// в тех же пропорциях, что и у исходного барабана 170 × 330 с ячейкой 240.
+const ITEM_RATIO = 240 / 170
+const WINDOW_RATIO = 330 / 240
+const reelEl = ref<HTMLElement>()
+const reelWidth = ref(170)
+const ITEM_H = computed(() => Math.round(reelWidth.value * ITEM_RATIO))
+const WINDOW_H = computed(() => Math.round(ITEM_H.value * WINDOW_RATIO))
+
+let resizeObserver: ResizeObserver | undefined
+onMounted(() => {
+  resizeObserver = new ResizeObserver(([entry]) => (reelWidth.value = entry.contentRect.width || 170))
+  if (reelEl.value) resizeObserver.observe(reelEl.value)
+})
+onBeforeUnmount(() => resizeObserver?.disconnect())
 
 interface ReelItem {
   key: number
@@ -34,7 +47,7 @@ const spinning = ref(false)
 const hasResult = ref(false)
 const stripEl = ref<HTMLElement>()
 
-const offsetPx = computed(() => -(offsetIndex.value * ITEM_H) + (WINDOW_H - ITEM_H) / 2)
+const offsetPx = computed(() => -(offsetIndex.value * ITEM_H.value) + (WINDOW_H.value - ITEM_H.value) / 2)
 
 function resetIdle() {
   items.value = [toItem(randomFilm()), toItem(randomFilm()), toItem(randomFilm())]
@@ -96,7 +109,7 @@ defineExpose({ spin })
 </script>
 
 <template>
-  <div class="reel" :class="{ spinning }" :style="{ height: WINDOW_H + 'px' }">
+  <div ref="reelEl" class="reel" :class="{ spinning }" :style="{ height: WINDOW_H + 'px' }">
     <div
       ref="stripEl"
       class="strip"
@@ -116,7 +129,10 @@ defineExpose({ spin })
 <style scoped>
 .reel {
   position: relative;
-  width: 170px;
+  /* ширину задаёт автомат через --reel-w; высоты Reel считает сам */
+  width: var(--reel-w, 170px);
+  /* текст «названия вместо постера» масштабируется вместе с барабаном (16px при 170px) */
+  font-size: calc(var(--reel-w, 170px) / 10.6);
   overflow: hidden;
   border-radius: 12px;
   background: linear-gradient(90deg, #d9d9d9, #ffffff 30%, #ffffff 70%, #cfcfcf);
@@ -130,8 +146,9 @@ defineExpose({ spin })
   will-change: transform;
 }
 
+/* проценты в padding считаются от ширины барабана: 8px 12px при 170px */
 .cell {
-  padding: 8px 12px;
+  padding: 4.7% 7%;
 }
 
 .spinning .strip {

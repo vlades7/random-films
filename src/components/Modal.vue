@@ -35,6 +35,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   inset: 0;
   z-index: 50;
   display: grid;
+  /* колонка не шире экрана — иначе max-width: 100% у окна считается от его же ширины */
+  grid-template-columns: minmax(0, 1fr);
   place-items: center;
   padding: 16px;
   background: rgba(8, 0, 16, 0.75);
@@ -66,6 +68,22 @@ header {
 h2 {
   margin: 0;
   font-size: 22px;
+}
+
+@media (max-width: 600px) {
+  .modal-backdrop {
+    padding: 10px;
+  }
+
+  .modal {
+    padding: 14px;
+    /* dvh — с учётом адресной строки мобильного браузера */
+    max-height: calc(100dvh - 20px);
+  }
+
+  h2 {
+    font-size: 18px;
+  }
 }
 
 @keyframes fade {

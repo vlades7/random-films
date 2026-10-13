@@ -8,8 +8,15 @@ import { dragFilm } from '../dragFilm'
 import type { Film, FilmList } from '../types'
 
 // Список — реактивный объект из App, правим его поля напрямую
-const props = defineProps<{ list: FilmList }>()
-const emit = defineEmits<{ delete: []; moveFilm: [filmId: string, fromListId: string] }>()
+// allLists — все списки, чтобы в редакторе фильма можно было выбрать, куда его перенести
+const props = defineProps<{ list: FilmList; allLists: FilmList[] }>()
+const emit = defineEmits<{
+  delete: []
+  /** сюда перетащили фильм из другого списка */
+  moveFilm: [filmId: string, fromListId: string]
+  /** фильм из этого списка перенесли в другой через редактор */
+  moveTo: [filmId: string, toListId: string]
+}>()
 
 /* ---------- Перетаскивание фильма в другой список ---------- */
 const DRAG_TYPE = 'application/x-random-films'
@@ -75,12 +82,14 @@ const visibleFilms = computed(() => {
 
 const watchedCount = computed(() => props.list.films.filter((f) => f.watched).length)
 
-function onSave(data: { title: string; image?: string; watched: boolean }) {
+function onSave({ listId, ...data }: { title: string; image?: string; watched: boolean; listId: string }) {
   const film = editing.value?.film
   if (film) {
     film.title = data.title
     film.image = data.image
     film.watched = data.watched
+    // перенос в другой список из редактора — замена перетаскиванию на телефонах
+    if (listId !== props.list.id) emit('moveTo', film.id, listId)
   } else {
     props.list.films.unshift({ id: uid(), ...data })
     // берём реактивный объект из массива, чтобы картинка потом сохранилась
@@ -215,6 +224,8 @@ function deleteList() {
       v-if="editing"
       :film="editing.film"
       :color="list.color"
+      :list-id="list.id"
+      :lists="allLists"
       @save="onSave"
       @close="editing = null"
     />
@@ -478,6 +489,36 @@ header {
 
 .eye.on:hover {
   background: var(--gold);
+}
+
+/* Сенсорные экраны: наведения нет — кнопки на постерах видны всегда, «рука» не нужна */
+@media (hover: none) {
+  .del,
+  .eye {
+    opacity: 0.9;
+    width: 26px;
+    height: 26px;
+  }
+
+  .film {
+    cursor: pointer;
+  }
+}
+
+@media (max-width: 600px) {
+  .list {
+    padding: 12px;
+  }
+
+  .name {
+    font-size: 17px;
+  }
+
+  .films {
+    grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
+    gap: 8px;
+    max-height: none; /* на телефоне прокручивается вся страница, а не список внутри */
+  }
 }
 
 .watched-count {

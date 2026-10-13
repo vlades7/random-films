@@ -54,7 +54,7 @@ const emit = defineEmits<{ close: [] }>()
 .jackpot {
   position: relative;
   font-family: 'Bungee Shade', var(--font-display);
-  font-size: 54px;
+  font-size: clamp(34px, 11vw, 54px);
   color: var(--gold);
   text-shadow: 0 0 12px #ff8c1a, 0 0 34px var(--pink);
   animation: bounce 0.8s ease-in-out infinite alternate;
@@ -72,8 +72,8 @@ const emit = defineEmits<{ close: [] }>()
 
 .poster {
   position: relative;
-  width: 220px;
-  height: 330px;
+  width: min(220px, 55vw);
+  aspect-ratio: 2 / 3;
   border-radius: 14px;
   padding: 6px;
   background: linear-gradient(135deg, var(--gold), #fff3b0, var(--gold-dark));
@@ -84,7 +84,7 @@ const emit = defineEmits<{ close: [] }>()
 .title {
   position: relative;
   font-family: var(--font-display);
-  font-size: 26px;
+  font-size: clamp(18px, 6vw, 26px);
   color: #fff;
   text-shadow: 0 0 10px var(--pink);
   max-width: 100%;
